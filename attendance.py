@@ -24,7 +24,7 @@ for file in all_files:
             continue
 
       
-        subject_name = df.iloc[0, 0]  
+        subject_name = df.iloc[0, 0] 
 
         # Set the second row as the header
         df.columns = df.iloc[1]  # Set the second row as header
@@ -105,5 +105,5 @@ if df_list:
     print(merged_df.head())  
 
     # Write the final DataFrame to a new Excel file
-    output_file = "AttendanceReport.xlsx"
+    output_file = "AttendaceReport.xlsx"
     merged_df.to_excel(output_file, sheet_name='Summary', index=True)  # Include index

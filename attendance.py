@@ -7,12 +7,13 @@ from openpyxl.styles import Alignment, Font
 path = "./*.xlsx" 
 all_files = glob.glob(path)
 
+#empty list bana di hai storage ke liye
 df_list = []
 
 
 for file in all_files:
     try:
-        # Load each Excel file without header to inspect the first few rows
+        # Load each Excel file without header to inspect the first few rows and then print the first 5 rows to check fromating
         df = pd.read_excel(file, header=None)
 
         print(f"Processing file: {file}")
@@ -26,27 +27,27 @@ for file in all_files:
       
         subject_name = df.iloc[0, 0] 
 
-        # Set the second row as the header
-        df.columns = df.iloc[1]  # Set the second row as header
+        # Set the second row which contains subject name as header
+        df.columns = df.iloc[1]  # Set the second row as header here 
         df = df.drop(index=[0, 1]) 
 
-        # Reset index
+        # Reset index so that the deletion of the first two rows does not affect the indexing 
         df.reset_index(drop=True, inplace=True)
 
-        # Clean up column names
-        df.columns = df.columns.str.strip()  # Remove any leading/trailing spaces
+        
+        df.columns = df.columns.str.strip()  # Remove any spaces in front or back in colum name
 
         if 'Enrollment No.' not in df.columns or 'Name' not in df.columns:
             print(f"Skipping file due to missing 'Enrollment No.' or 'Name' columns: {file}")
             continue
 
-        # Ensure numeric columns are converted to float, handling errors
+        # converting all values to numeric to make sure nothing illigitimate is in the attencace count
         df['Total Theory'] = pd.to_numeric(df['Total Theory'], errors='coerce')
         df['Attended'] = pd.to_numeric(df['Attended'], errors='coerce')
 
   
         if 'Lab' in df.columns and 'Lab Attended' in df.columns:
-            # Select relevant columns for both theory and lab
+            # Select columns for lab and theory seperately
             df['Lab'] = pd.to_numeric(df['Lab'], errors='coerce')
             df['Lab Attended'] = pd.to_numeric(df['Lab Attended'], errors='coerce')
             df_theory = df[['Enrollment No.', 'Name', 'Total Theory', 'Attended']].copy()
@@ -66,14 +67,13 @@ for file in all_files:
        
         df_list.append(df_theory)
 
-        # If lab data exists, process it similarly
+        # If lab data exists take it similary as theory 
         if df_lab is not None:
             df_lab['Lab Percentage'] = (df_lab['Lab Attended'] * 100 / df_lab['Lab']).fillna(0).round(2)
             df_lab.set_index(['Enrollment No.', 'Name'], inplace=True)
             df_lab.columns = pd.MultiIndex.from_product([[subject_name], df_lab.columns])
             df_list.append(df_lab)
 
-        # Print the DataFrames to ensure they have the correct data
         print(f"DataFrame for {subject_name} (Theory):")
         print(df_theory.head())  
 
@@ -84,7 +84,7 @@ for file in all_files:
     except Exception as e:
         print(f"Error processing file {file}: {e}")
 
-# Concatenate all DataFrames in the list into a single DataFrame
+# Concatinate all DataFrames in the list into a single DataFrame
 if df_list:
     merged_df = pd.concat(df_list, axis=1)  
 
@@ -97,13 +97,13 @@ if df_list:
     
     total_percentage = (merged_df['Total Attended'] * 100 / merged_df['Total Classes']).replace([float('inf'), -float('inf')], 0).round(0).fillna(0)
 
-    # Add the Total Percentage column to the DataFrame
+    # Adding the Total Percentage column to the DataFrame
     merged_df['Total Percentage'] = total_percentage
 
-    # Print the merged DataFrame for verification
+    # Print the merged DataFrame for verification looking for any formating mistakes
     print("Merged DataFrame with Total Columns and Percentages:")
     print(merged_df.head())  
 
-    # Write the final DataFrame to a new Excel file
+    # creating final output dataframe 
     output_file = "FinalAttendace.xlsx"
     merged_df.to_excel(output_file, sheet_name='Summary', index=True)  # Include index
